@@ -94,7 +94,7 @@ const aesRsaEncrypt = (text) => ({
       description: 'An updated gist description',
       files: {
         '🎵 My NetEase Cloud Music Top Track': {
-          content: `${tracks}\n\nTop Tracks from ${startDate} - ${endDate}`,
+          content: `${tracks}\n\nTop Tracks from ${startDate}`,
         }
       },
       headers: {
