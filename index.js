@@ -2,6 +2,7 @@ require('dotenv').config()
 const axios = require('axios')
 const crypto = require('crypto')
 const { Octokit } = require('@octokit/rest')
+const moment = require('moment') // Add moment.js for date formatting
 
 const {
   GIST_ID: gistId,
@@ -62,6 +63,9 @@ const aesRsaEncrypt = (text) => ({
       return
     }
 
+    const startDate = moment(data.weekData[0].date).format('MM/DD/YYYY')
+    const endDate = moment(data.weekData[data.weekData.length - 1].date).format('MM/DD/YYYY')
+
     const tracks = songs
       .slice(0, 5)
       .map(({ song }) => `[${song.name}] - ${song.ar.map(({ name }) => name).join('/')}`)
@@ -90,7 +94,7 @@ const aesRsaEncrypt = (text) => ({
       description: 'An updated gist description',
       files: {
         '🎵 My NetEase Cloud Music Top Track': {
-          content: tracks,
+          content: `Top Tracks from ${startDate} - ${endDate}:\n\n${tracks}`,
         }
       },
       headers: {
