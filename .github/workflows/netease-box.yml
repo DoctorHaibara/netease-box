@@ -9,6 +9,8 @@ jobs:
   updateTopTracks:
     runs-on: ubuntu-latest
     environment: prod
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - run: yarn install
@@ -19,3 +21,14 @@ jobs:
           ACCOUNT_ID: 1504809469
           SONG_TYPE: 1
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Commit README (keep repo active, prevents 60-day workflow auto-disable)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "No README changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: update last-run timestamp [skip ci]"
+          git push

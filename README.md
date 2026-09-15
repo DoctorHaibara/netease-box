@@ -10,6 +10,9 @@
 
 > 灵感来自于 [@jacc's music-box](https://github.com/jacc/music-box)
 
+<!-- netease-box:start -->
+<!-- netease-box:end -->
+
 ## 🎒 前置工作
 
 1. 创建一个公开的 Github Gist (https://gist.github.com)

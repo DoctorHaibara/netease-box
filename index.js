@@ -1,6 +1,7 @@
 require('dotenv').config()
 const axios = require('axios')
 const crypto = require('crypto')
+const fs = require('fs')
 const { Octokit } = require('@octokit/rest')
 
 // ======== NetEase weapi encryption constants ========
@@ -82,7 +83,33 @@ const weapiEncrypt = (data) => {
 
 // ======== Main ========
 
-;(async () => {
+let lastTracks = ''
+
+/**
+ * Refresh the "last updated" section in the repo README.
+ * Each scheduled run then produces a commit, which counts as repo
+ * activity and prevents GitHub from auto-disabling the cron workflow
+ * after 60 days of inactivity.
+ */
+const updateReadme = (tracks) => {
+  const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
+  const section = [
+    '<!-- netease-box:start -->',
+    `⏰ 上次更新时间：${stamp}`,
+    tracks && `🎵 本周 Top 5：\n${tracks}`,
+    '<!-- netease-box:end -->',
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const readme = fs.readFileSync('README.md', 'utf-8')
+  const updated = /<!-- netease-box:start -->[\s\S]*?<!-- netease-box:end -->/.test(readme)
+    ? readme.replace(/<!-- netease-box:start -->[\s\S]*?<!-- netease-box:end -->/, section)
+    : `${readme.trimEnd()}\n\n${section}\n`
+  fs.writeFileSync('README.md', updated)
+}
+
+const run = async () => {
   try {
     // 1. Fetch play record from NetEase
     const requestBody = weapiEncrypt({ uid: accountId, type })
@@ -138,6 +165,7 @@ const weapiEncrypt = (data) => {
       .join('\n')
 
     console.log('\nTop 5 tracks:\n', tracks)
+    lastTracks = tracks
 
     // 5. Update Gist
     const octokit = new Octokit({ auth: `${githubToken}` })
@@ -175,6 +203,21 @@ const weapiEncrypt = (data) => {
     } else {
       console.error('\n❌ Unable to update gist:', error.message)
       console.error(error)
+    }
+  }
+}
+
+;(async () => {
+  try {
+    await run()
+  } finally {
+    // Always touch README, even when the NetEase API or Gist update fails,
+    // so every scheduled run still yields a commit (repo activity).
+    try {
+      updateReadme(lastTracks)
+      console.log('\n📝 README last-updated section refreshed')
+    } catch (error) {
+      console.warn('\n⚠️  Failed to update README:', error.message)
     }
   }
 })()
