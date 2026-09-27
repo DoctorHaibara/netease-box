@@ -11,13 +11,13 @@
 > 灵感来自于 [@jacc's music-box](https://github.com/jacc/music-box)
 
 <!-- netease-box:start -->
-⏰ 上次更新时间：2026-09-20 22:05 UTC
+⏰ 上次更新时间：2026-09-27 22:05 UTC
 🎵 本周 Top 5：
 [Thriller (Louis La Roche Dub Mix)] - Louis La Roche/Michael Jackson
 [春天] - 张敬轩
+[爱不来 (feat. Miss Ko葛仲珊)] - 方大同/葛仲珊
 [Heal the World] - Michael Jackson
 [Catch a Grenade (The Hooligans Remix)] - Bruno Mars
-[不要说你不知道] - 古巨基
 <!-- netease-box:end -->
 
 ## 🎒 前置工作
