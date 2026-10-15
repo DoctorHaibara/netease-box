@@ -84,6 +84,8 @@ const weapiEncrypt = (data) => {
 // ======== Main ========
 
 let lastTracks = ''
+let gistUpdated = false
+let benignSkip = false
 
 /**
  * Refresh the "last updated" section in the repo README.
@@ -111,49 +113,64 @@ const updateReadme = (tracks) => {
 
 const run = async () => {
   try {
-    // 1. Fetch play record from NetEase
-    const requestBody = weapiEncrypt({ uid: accountId, type })
+    // 1. Fetch play record from NetEase, with retries — the API
+    // intermittently rejects requests from overseas (Actions runner) IPs
     console.log('\nCalling NetEase API: /weapi/v1/play/record')
 
-    const { data } = await axios.post(
-      'https://music.163.com/weapi/v1/play/record?csrf_token=',
-      new URLSearchParams(requestBody).toString(),
-      {
-        headers: {
-          Accept: '*/*',
-          'Accept-Encoding': 'gzip,deflate,sdch',
-          'Accept-Language': 'zh-CN,en-US;q=0.7,en;q=0.3',
-          Connection: 'keep-alive',
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          Host: 'music.163.com',
-          Referer: 'https://music.163.com/',
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
+    let data
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const response = await axios.post(
+          'https://music.163.com/weapi/v1/play/record?csrf_token=',
+          new URLSearchParams(weapiEncrypt({ uid: accountId, type })).toString(),
+          {
+            headers: {
+              Accept: '*/*',
+              'Accept-Encoding': 'gzip,deflate,sdch',
+              'Accept-Language': 'zh-CN,en-US;q=0.7,en;q=0.3',
+              Connection: 'keep-alive',
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+              Host: 'music.163.com',
+              Referer: 'https://music.163.com/',
+              'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+          }
+        )
+        data = response.data
+        if (data.code === 200) break
+        console.warn(`  attempt ${attempt}: API returned code ${data.code} (${data.message})`)
+      } catch (error) {
+        console.warn(`  attempt ${attempt}: request failed — ${error.message}`)
       }
-    )
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+      }
+    }
 
     // Log full response for debugging
     console.log('\nNetEase API Response:')
-    console.log('  code:', data.code)
-    console.log('  message:', data.message)
-    console.log('  has weekData:', !!data.weekData)
-    console.log('  has allData:', !!data.allData)
-    if (data.weekData) {
+    console.log('  code:', data && data.code)
+    console.log('  message:', data && data.message)
+    console.log('  has weekData:', !!(data && data.weekData))
+    console.log('  has allData:', !!(data && data.allData))
+    if (data && data.weekData) {
       console.log('  weekData length:', data.weekData.length)
       console.log('  first entry:', JSON.stringify(data.weekData[0]))
     }
 
     // 2. Check response code
-    if (data.code !== 200) {
-      console.error(`\n⚠️  NetEase API returned code ${data.code}: ${data.message}`)
-      console.error('Full response:', JSON.stringify(data))
+    if (!data || data.code !== 200) {
+      console.error('\n⚠️  NetEase API failed after 3 attempts')
+      console.error('Last response:', JSON.stringify(data))
       return
     }
 
     // 3. Extract songs (weekData for weekly, allData for all-time)
     const songs = data.weekData ?? data.allData
     if (!songs || !songs.length) {
+      // A genuinely empty listen history is not an error
+      benignSkip = true
       console.log('No songs found in response')
       return
     }
@@ -195,6 +212,7 @@ const run = async () => {
     })
 
     console.log('\n✅ Gist updated successfully!')
+    gistUpdated = true
   } catch (error) {
     if (error.response) {
       console.error('\n❌ HTTP Error:')
@@ -218,6 +236,13 @@ const run = async () => {
       console.log('\n📝 README last-updated section refreshed')
     } catch (error) {
       console.warn('\n⚠️  Failed to update README:', error.message)
+    }
+    // Fail the workflow step loudly when the gist was not updated due to
+    // an error, so the run shows up red instead of silently succeeding.
+    // A genuinely empty listen history (benignSkip) does not fail the run.
+    if (!gistUpdated && !benignSkip) {
+      console.error('\n❌ Gist was NOT updated this run')
+      process.exitCode = 1
     }
   }
 })()

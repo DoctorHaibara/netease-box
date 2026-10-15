@@ -22,6 +22,7 @@ jobs:
           SONG_TYPE: 1
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
       - name: Commit README (keep repo active, prevents 60-day workflow auto-disable)
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
