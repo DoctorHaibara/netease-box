@@ -11,7 +11,13 @@
 > 灵感来自于 [@jacc's music-box](https://github.com/jacc/music-box)
 
 <!-- netease-box:start -->
-⏰ 上次更新时间：2026-10-12 00:52 UTC
+⏰ 上次更新时间：2026-10-15 03:11 UTC
+🎵 本周 Top 5：
+[刚刚好] - 李玖哲
+[盛夏的果实] - 莫文蔚
+[美人蕉] - 李琳/李凯年
+[温存记忆] - 魏晨
+[我太傻] - 陶喆
 <!-- netease-box:end -->
 
 ## 🎒 前置工作
